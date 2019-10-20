@@ -1,113 +1,220 @@
 <template>
   <v-app>
-    <div id="login" v-if="loginType === 'Login'">
-      <h1>Leave Management System</h1>
-      <v-text-field  type="text" name="username" v-model="input.username" placeholder="Username"/>
-      <br>
-      <v-btn color="purple" dark rounded raised type="button" v-on:click="login()">Login</v-btn>
-      <p v-if="isError">{{ message }}</p>
-    </div>
-    <div id="leave" v-if="loginType === 'Leave'">
-      <p>
-        Welcome {{ rows.name }} !!
-        <v-btn text absolute right color="red" type="button" v-on:click="logoff()">Logoff</v-btn>
-      </p>
-
-      <h1>Leave details</h1>
-      <h5 align="right"><span>{{timestamp}}</span></h5>
-
-      <v-simple-table id="firstTable" dense light>
-        <thead>
-          <tr>
+    <v-container fluid v-if="view === 'Login'">
+      <v-row>
+        <v-col cols=12>
+          <h1>Leave Management System</h1>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols=4> 
+         <v-text-field solo type="text" name="username" v-model="input.username" label="Username"/>   
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols=3> 
+          <p class="red--text" v-if="isError">{{ message }}</p>
+        </v-col>
+        <v-col cols=1>
+         <v-btn color="teal" block type="button" @click="login">Login</v-btn> 
+        </v-col>
+      </v-row> 
+    </v-container>
+    <v-container fluid v-else-if="view === 'Leave'">
+      <v-row>
+        <v-col cols=10 class="blue--text">
+          <h4>Welcome {{ input.username }} !!</h4>
+        </v-col>
+        <v-col cols=2 class="text-right">
+          <v-btn text color="red" type="button" @click="logoff">Logoff</v-btn>
+        </v-col>
+      </v-row>
+         
+      <v-row>
+        <v-col cols=10>
+        <h3>Leave Statistics</h3>
+        </v-col>
+        <v-col cols=2 class="text-right">
+          <h5 >{{timestamp}}</h5>
+       </v-col>
+      </v-row> 
+      <v-row>
+        <v-col cols=10>
+          <v-simple-table dense dark> 
+          <thead>
+            <tr>
             
             <th>Leave Type </th>
             <th>Total Leaves</th>
             <th>Remaining Leaves</th>
             <th>Availed Leaves </th>
               
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-           <td>Vacation </td> 
-            <td>{{rows.holidays + vacationRecorded }}</td>
-            <td>{{ rows.holidays }}</td>
-            <td>{{vacationRecorded}}</td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+
+            <td>Vacation</td> 
+            <td>{{ user.holidays + vacationRecorded }}</td>
+            <td>{{ user.holidays }}</td>
+            <td>{{ vacationRecorded }}</td>
             
-          </tr>
-          <tr>
-           <td>Sick </td> 
-            <td>{{rows.sickdays + sickRecorded }}</td>
-            <td>{{ rows.sickdays }}</td>
+            </tr>
+            <tr>
+
+            <td>Sick</td> 
+            <td>{{ user.sickdays + sickRecorded }}</td>
+            <td>{{ user.sickdays }}</td>
             <td>{{sickRecorded}}</td>
             
-          </tr>
-        </tbody>
-      </v-simple-table>
-      <p>
-      <v-btn color="green" dark rounded absolute right raised type="button" v-on:click="applyLeaves()">Apply Leave</v-btn>
-      </p>
-      <br>
-      <br>
+            </tr>
+          </tbody>
+        </v-simple-table> 
+       </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols=2>
+         <v-btn color="teal" block  type="button" @click="setVacation">Availed Leaves</v-btn> 
+        </v-col>
+        <v-col cols=2>
+         <v-btn color="teal" block  type="button" @click="setHoliday">Holidays List</v-btn> 
+        </v-col>
+        <v-col cols=2>
+         <v-btn color="teal" block  type="button" @click="setLeave">Leave Details</v-btn> 
+        </v-col>
+        <v-col cols=2>
+         <v-btn color="teal" block  type="button" @click="setApply">Apply Leaves</v-btn> 
+        </v-col>
+        <v-col cols=2>
+         <v-btn color="teal" block  type="button" @click="setDelete">Delete Leaves</v-btn> 
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols=10>
+           <div v-if="action === 'vacation'">
+            <h3>Availed Leaves Details</h3>
+            <v-simple-table>
+            <thead>
+              <tr>
+              <th>Recorded Date </th>
+              <th>Leave Type </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for ="leave in leaves">
+              <td>{{ leave.date }}</td>
+              <td>{{leave.type}}</td>
+              </tr>
+            </tbody>
+            </v-simple-table>
+           </div>
       
-        <h3 color="Blue">Recorded Leave/Holiday Details</h3>
-        <br>
-      <v-sheet height="400" width="800" float="centre">
-    <v-calendar
-      type="month"
-      color="blue" 
-      is-dark
-      dark
-    ></v-calendar>
-  </v-sheet> 
-      <br>
-<p>      
-<v-btn color="purple" dark rounded raised  type="button" v-on:click="setVacation()">Leave Details</v-btn>
+          <div v-if="action === 'holiday'">
+            <h3>Public Holidays</h3>
+            <v-simple-table>
+            <thead>
+              <tr>
+              <th>Holiday Date </th>
+              <th>Holiday Name </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for ="holiday in holidays">
+              <td>{{ holiday.date }}</td>
+              <td>{{holiday.name}}</td>
+              </tr>
+            </tbody>
+            </v-simple-table>
+          </div>
 
-<v-btn color="purple" dark rounded raised type="button" v-on:click="setHoliday()">Holiday Details</v-btn>
-</p>
-      <div v-if="leaveType === 'vacation'">
-      <h3>Recorded Leave Details</h3>
-      <v-simple-table id="firstTable">
-        <thead>
-          <tr>
-            <th>Recorded Date </th>
-            <th>Leave Type </th>
+          <div v-if="action === 'leave'">
+            <h3>Leave Details</h3>
+            <v-simple-table>
+            <thead>
+              <tr>
+              <th>Start Date </th>
+              <th>End Date </th>
+              <th>Leave Type </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+              <td>{{stat.ssDate}}</td>
+              <td>{{stat.esDate }}</td>
+              <td>sick</td>
+              </tr>
+              <tr>
+              <td>{{stat.svDate}}</td>
+              <td>{{stat.evDate}}</td>
+              <td>Vacation</td>
+              </tr>
+            </tbody>
+            </v-simple-table>
+          </div>
 
-           
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for ="leave in leaves">
-            
-            <td>{{ leave.date }}</td>
-            <td>{{leave.type}}</td>
-          </tr>
-        </tbody>
-      </v-simple-table>
-      </div>
-      <br>
-      <div v-if="leaveType === 'holiday'">
-       <h3>Public Holidays</h3>
-      <v-simple-table id="firstTable">
-        <thead>
-          <tr>
-            
-            <th>Holiday Date </th>
-            <th>Holiday Name </th>
-
-           
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for ="holiday in holidays">
-            <td>{{ holiday.date }}</td>
-            <td>{{holiday.name}}</td>
-          </tr>
-        </tbody>
-      </v-simple-table>
-      </div>
-    </div>
+         <div v-if="action === 'applyLeave'">
+            <h3>Record New Leaves</h3>
+            <v-simple-table>
+            <tbody>
+              <tr>
+              <td>
+              <v-text-field type="date" name="startDate" v-model="apply.AstartDate" label="Start Date"/>
+              </td>
+              <td>
+              <v-text-field type="date" name="endDate" v-model="apply.AendDate" label="End Date"/>
+              </td>
+              <td>
+              <v-select v-model="apply.Atype" label="Leave Type" :items="['vacation', 'sick']"> 
+              </v-select>  
+              </td> 
+              <td>
+              <span> Num of Days: {{apply.Adays}} </span>
+              
+              </td> 
+              </tr> 
+              <tr>
+              <td> 
+              <v-btn color="teal" type="button" @click="Validate">Submit</v-btn>
+              </td> 
+              </tr> 
+              <tr></tr>
+              <tr>
+              <td> 
+              <p class="red--text" v-if="apply.isDateError">{{ apply.Aerror }}</p>
+              </td> 
+              </tr> 
+            </tbody>
+            </v-simple-table>
+          </div> 
+          <div v-if="action === 'deleteLeave'">
+            <h3>Delete Leaves</h3>
+            <v-simple-table>
+            <tbody>
+              <tr>
+              <td>
+              <v-text-field type="date" v-model="del.startDate" label="Start Date"/>
+              </td>
+              <td>
+              <v-text-field type="date" v-model="del.endDate" label="End Date"/>
+              </td>
+              </tr> 
+              <tr>
+              <td> 
+              <v-btn color="teal" type="button" @click="deleteLeaves">Submit</v-btn>
+              </td> 
+              </tr> 
+              <tr></tr>
+              <tr>
+              <td> 
+              <p class="red--text" v-if="del.isDelMsg">{{ del.msg }}</p>
+              </td> 
+              </tr> 
+            </tbody>
+            </v-simple-table>
+          </div>   
+        </v-col>
+      </v-row>
+    </v-container>
   </v-app>
 </template>
 
@@ -115,44 +222,76 @@
 
 
 <script>
-import axios from 'axios'
+import  { 
+  getUser,getLeaves,getPublicHolidays,removeLeaves,recordLeaves
+} from "./api.js"
 import moment from 'moment'
 
 export default {
-  name: "Login",
+  name: "App",
   data() {
     return {
       isError: false,
-      loginType: "Login",
-      leaveType:"vacation",
-      applyLeave:false,
+      view: "Login",
+      action:"vacation",
       message: "",
       timestamp:"",
+      user:null,
       rows: {
         id:"",
         name:"",
         holidays:"",
         sickdays:""
       },
+      date:"",
+      dates:[],
       leaves:[],
       holidays:[],
+      currentDate:"" ,
       leave: {
-        date:"",
         id:"",
-        type:"",
-        userid:""
+        date:"",
+        userid:"",
+        type:""
+       
       },
+      holiday: {
+        id:"",
+        date:"",
+        name:""
+      },
+     status:"",
      sickRecorded:0,
      vacationRecorded:0,
-      axiosInstance: axios.create({
-      baseURL: "https://leaves.speakup.systems/api",
-      headers: {
-        "x-api-key": "grdcJnsPdRac8aor66yV46ySis5xDKbZ3KNinTqE"
-      }
-    }),
+      
       input: {
         username: ""
-      }
+      },
+      apply: {
+        AstartDate: "",
+        AendDate: "",
+        Atype:"",
+        Adays:"" ,
+        Aerror:"",
+        isDateError:false ,
+        present:false
+      },
+      del: {
+        startDate: "",
+        endDate: "",
+        msg:"",
+        isDelMsg:false 
+      },
+      stat: {
+        ssDate: "",
+        esDate: "",
+        svDate: "",
+        evDate: "",
+        allDates:[],
+	      allSick:[],
+	      allVacation:[]
+      },
+      start:""
     };
   },
 
@@ -161,25 +300,20 @@ created() {
             },
    
   
-  methods: {
+methods: {  
   async  login() {
-   
       this.message = "";;
-      this.loginType = "Login";
+      this.view = "Login";
       
       if (this.input.username !== "") {
-
-     await this.getUser(this.input.username);
-     this.getNow();
-     
-        if (this.input.username === this.rows.name) {
-          this.loginType = "Leave";
-          await this.getLeaves(this.rows.id);
-          await this.getPublicHolidays();
-          
-          for(let i = 0; i <= this.leaves.length; i++){
-            this.leave=this.leaves[i]
-           if (this.leave.type === "sick"){
+      this.user = await getUser(this.input.username);
+        if (this.user){
+          this.currentDate = moment().format("YYYY-MM-DD");
+          this.view = "Leave";
+          this.leaves= await getLeaves(this.user.id);
+          this.holidays=await getPublicHolidays();
+          for(const leave of this.leaves){
+           if (leave.type==='sick'){
               this.sickRecorded=this.sickRecorded+1;
             } else {
               this.vacationRecorded=this.vacationRecorded+1;
@@ -196,91 +330,211 @@ created() {
       }
     },
 
-    applyLeaves(){
-          this.applyLeave=true;
-
-    },
-
-    logoff() {
-      this.loginType = "Login";
+  logoff() {
+      this.view = "Login";
       this.input.username = "";
+      this.user=null;
+      this.leaves=null;
+      this.holidays=null;
     },
 
-    setVacation(){
-      this.leaveType = "vacation";
+  setVacation(){
+      this.action = "vacation";
     },
     
-    setHoliday(){
-      this.leaveType = "holiday";
+  setHoliday(){
+      this.action = "holiday";
     },
 
-    async getUser(name){
-    try {
-      const response = await this.axiosInstance.get("/users", {
-        params: {
-          name
+  setLeave(){
+      this.action = "leave";
+      for(const leave of this.leaves){
+        if(leave.type==='sick'){
+          this.stat.allSick.push(leave.date);
+          this.stat.allDates.push(leave.date);
+        }else{
+          this.stat.allVacation.push(leave.date);
+          this.stat.allDates.push(leave.date);
         }
-       
-      },
-      )
-      this.rows = response.data;
-      return response.data
-    } catch(error) {
-      return false
-    }
-  },
 
+      }
+      for(const holiday of this.holidays){
+       this.stat.allDates.push(holiday.date); 
+      }
+      console.log(this.stat.allDates)
+      this.stat.ssDate = this.stat.allSick[0];
+      this.start = this.stat.ssDate;
+      this.stat.svDate=  this.stat.allVacation[0];
+      for(let i=0; i<15; i++){
+        for(let j=0; j<this.stat.allDates.length;j++) {
+          if(this.start===this.stat.allDates[i]){
+            this.start=moment(this.start).add(1, 'days').format('YYYY-MM-DD');
+          }else if(moment(this.start).format('dddd')==='Sunday' || moment(this.start).format('dddd')==='Saturday'){
+            this.start=moment(this.start).add(1, 'days').format('YYYY-MM-DD');
+          }else{
+            this.stat.esDate=moment(this.start).subtract(1, 'days').format('YYYY-MM-DD');
+          }
+        } 
 
-  async getLeaves(userId){
-    try {
-      const response = await this.axiosInstance.get("/leaves", {
-        params: {
-          userId
-        }
-      })
-      this.leaves = response.data;
-      return response.data
-    } catch(error) {
-      return false
-    }
-  },
+      }
+      this.start = this.stat.svDate;
+      for(let i=0; i<15; i++){
+        for(let j=0; j<this.stat.allDates.length;j++) {
+          if(this.start===this.stat.allDates[i]){
+            this.start=moment(this.start).add(1, 'days').format('YYYY-MM-DD');
+            console.log(this.start)
+          }else if(moment(this.start).format('dddd')==='Sunday' || moment(this.start).format('dddd')==='Saturday'){
+            this.start=moment(this.start).add(1, 'days').format('YYYY-MM-DD');
+             console.log(this.start)
+          }else{
+            this.stat.evDate=moment(this.start).subtract(1, 'days').format('YYYY-MM-DD');
+          }
+        } 
 
-  async removeLeaves(ids){
-    try {
-      const response = await this.axiosInstance.delete("/leaves", {
-        params: {
-          ids: ids.toString()
-        }
-      })
-      return response.data
-    } catch(error) {
-      return false
-    }
-  },
+      }
+      
+    },
 
-  async getPublicHolidays(){
-    try {
-      const response = await this.axiosInstance.get("/public-holidays")
-      this.holidays = response.data;
-      return response.data
-    } catch(error) {
-      return false
-    }
-  },
+  setApply(){
+      this.action="applyLeave";
+      this.apply.AstartDate="";
+      this.apply.AendDate="";
+      this.apply.Atype="";
+      this.apply.Aerror="";
+      this.apply.Adays="";
+    },
 
-  async recordLeaves(leaves){
-    try {
-      const response = await this.axiosInstance.post("/leaves", {
-        leaves
-      })
-      return response.data
-    } catch(error) {
-      return false
-    }
-  },
+  setDelete(){
+      this.action="deleteLeave";
+      this.del.startDate="";
+      this.del.endDate="";
+      this.del.msg="";
+    },
 
   getNow(){
     this.timestamp= moment().format('MMMM Do YYYY, h:mm a');
+  },
+
+  async deleteLeaves(){
+      if(this.del.startDate !== "" && this.del.endDate !== ""){
+        if(moment(this.currentDate).isAfter(this.del.startDate)){
+          this.del.isDelError = true;
+          this.del.msg= "You cannot delete the leaves from past!! "
+        } else if(moment(this.del.startDate).isAfter(this.del.endDate)){
+          this.del.isDelError = true;
+          this.del.msg="End date cannot be lesser than Start date";
+        } else{
+          await allDays(this.del.startDate,this.del.endDate); 
+          console.log(this.dates)
+          for(let i = 0; i < this.days.length; i++){
+            for(let k = 0; k < this.leaves.length; k++){
+              this.leave=this.leaves[k];
+              if(this.days[i] === this.leave.date){
+                this.status = await removeLeaves(this.leave.id);
+                if(this.status === 200){
+                  this.del.isDelMsg = true;
+                  this.del.msg="Leaves deleted successfully";
+                  this.del.startDate="" ;
+                  this.del.endDate="" ; 
+                }else{
+                  this.del.isDelMsg = true;
+                  this.del.msg="Leaves are not deleted";
+                }
+              }else{
+                this.del.isDelMsg = true;
+                this.del.msg="No leaves recorded for this date";
+              }
+            }
+          }
+
+        }
+      }else{
+        this.del.isDelError = true;
+        this.del.msg= "Please provide start and end date"
+      }
+      
+  },
+
+  async Validate(){
+    if(this.apply.AstartDate !== "" && this.apply.AendDate !== "" && this.apply.Atype !==""){
+      if(moment(this.currentDate).isAfter(this.apply.AstartDate)){
+          this.apply.isDateError = true;
+          this.apply.Aerror="Start Date cannot be lesser than current date";
+      } 
+      
+      else if(moment(this.apply.AstartDate).isAfter(this.apply.AendDate)){
+        this.apply.isDateError = true;
+        this.apply.Aerror="End date cannot be lesser than Start date";
+      }
+      else if(moment(this.apply.AstartDate).format('dddd')==='Sunday' || moment(this.apply.AendDate).format('dddd')==='Saturday'){
+        this.apply.isDateError = true;
+        this.apply.Aerror="Cannot apply leaves on sunday or saturday"; 
+      }
+
+      else if(moment(this.apply.AendDate).format('dddd')==='Sunday' || moment(this.apply.AendDate).format('dddd')==='Saturday'){
+        this.apply.isDateError = true;
+        this.apply.Aerror="Cannot apply leaves on sunday or saturday"; 
+      }
+      
+      else if(moment(this.apply.AendDate).format('YYYY') != moment(this.currentDate).format('YYYY')){
+        this.apply.isDateError = true;
+        this.apply.Aerror="You can only apply leaves for current year"; 
+      }
+      else{
+        for(let l = 0; l < this.holidays.length; l++){
+          this.holiday =this.holidays[l];
+          if(this.apply.AendDate === this.holiday.date || this.apply.AstartDate === this.holiday.date ){
+            this.apply.isDateError = true;
+            this.apply.Aerror="Cannot apply leaves on public holidays ";
+          }
+        }
+        this.apply.isDateError = false;
+        this.date=this.apply.AstartDate;
+        this.apply.Adays=moment(this.apply.AendDate).diff(moment(this.apply.AstartDate), 'days') + 1 ;
+        for(let i = 0; i < this.apply.Adays; i++){
+          for(let k = 0; k < this.leaves.length; k++){
+              this.leave=this.leaves[k];
+              if(this.date === this.leave.date){
+                  this.apply.isDateError = true;
+                  this.apply.present=true;
+                  this.apply.Aerror="Already you have applied leaves for this date";
+              }
+
+          }
+          if(this.apply.present===false){
+            var addleaves = {
+              "userId": this.user.id,
+              "date": this.date,
+              "type": this.apply.Atype
+              }
+              this.status = await recordLeaves(addleaves); 
+              console.log(this.status)
+          }
+              this.date = moment(this.date).add(1, 'days').format('YYYY-MM-DD');
+         }
+         if (this.status===200){
+            this.apply.isDateError = true;
+            this.apply.Aerror="Leaves applied successfully";
+            this.apply.AstartDate="";
+            this.apply.AendDate="";
+            this.apply.Atype="";
+            this.apply.Adays=""; 
+                
+         }
+      }
+        
+    } else{
+      this.apply.isDateError = true;
+      this.apply.Aerror="Please provide all the fields"
+      }  
+    },
+
+  async allDays(startDate, endDate) {
+    while (startDate.isSameOrBefore(endDate)) {
+        this.dates.push(startDate.format('YYYY-MM-DD'));
+        startDate.add(1, 'days');
+    }
+    
   }
   }
 
