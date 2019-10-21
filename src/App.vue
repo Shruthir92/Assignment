@@ -138,12 +138,12 @@
               </tr>
             </thead>
             <tbody>
-              <tr>
+              <tr class="green">
               <td>{{stat.ssDate}}</td>
               <td>{{stat.esDate }}</td>
-              <td>sick</td>
+              <td>Sick</td>
               </tr>
-              <tr>
+              <tr class="teal">
               <td>{{stat.svDate}}</td>
               <td>{{stat.evDate}}</td>
               <td>Vacation</td>
@@ -287,7 +287,8 @@ export default {
         esDate: "",
         svDate: "",
         evDate: "",
-        allDates:[],
+        sickHol:[],
+        vacHol:[],
 	      allSick:[],
 	      allVacation:[]
       },
@@ -298,7 +299,7 @@ export default {
 created() {
             setInterval(this.getNow, 1000);
             },
-   
+ 
   
 methods: {  
   async  login() {
@@ -312,6 +313,8 @@ methods: {
           this.view = "Leave";
           this.leaves= await getLeaves(this.user.id);
           this.holidays=await getPublicHolidays();
+          this.holidays.sort((a,b) => (a.date > b.date) ? 1 : -1);
+          
           for(const leave of this.leaves){
            if (leave.type==='sick'){
               this.sickRecorded=this.sickRecorded+1;
@@ -351,41 +354,53 @@ methods: {
       for(const leave of this.leaves){
         if(leave.type==='sick'){
           this.stat.allSick.push(leave.date);
-          this.stat.allDates.push(leave.date);
+          this.stat.sickHol.push(leave.date);
         }else{
           this.stat.allVacation.push(leave.date);
-          this.stat.allDates.push(leave.date);
+          this.stat.vacHol.push(leave.date);
         }
 
       }
       for(const holiday of this.holidays){
-       this.stat.allDates.push(holiday.date); 
+        this.stat.sickHol.push(holiday.date);
+        this.stat.vacHol.push(holiday.date); 
+
       }
-      console.log(this.stat.allDates)
+      this.stat.sickHol.sort(function(a, b){
+      var aa = moment(a).format('YYYY-MM-DD'),
+          bb = moment(b).format('YYYY-MM-DD');
+      return aa < bb ? -1 : (aa > bb ? 1 : 0);
+      });
+      this.stat.vacHol.sort(function(a, b){
+      var aa = moment(a).format('YYYY-MM-DD'),
+          bb = moment(b).format('YYYY-MM-DD');
+      return aa < bb ? -1 : (aa > bb ? 1 : 0);
+      });
+      
+      console.log(this.stat.sickHol)
+      console.log(this.stat.vacHol)
       this.stat.ssDate = this.stat.allSick[0];
       this.start = this.stat.ssDate;
-      this.stat.svDate=  this.stat.allVacation[0];
-      for(let i=0; i<15; i++){
-        for(let j=0; j<this.stat.allDates.length;j++) {
-          if(this.start===this.stat.allDates[i]){
+      for(let i=0; i<30; i++){
+        for(let j=0; j<this.stat.sickHol.length;j++) {
+          if(this.start===this.stat.sickHol[i]){
             this.start=moment(this.start).add(1, 'days').format('YYYY-MM-DD');
           }else if(moment(this.start).format('dddd')==='Sunday' || moment(this.start).format('dddd')==='Saturday'){
             this.start=moment(this.start).add(1, 'days').format('YYYY-MM-DD');
           }else{
             this.stat.esDate=moment(this.start).subtract(1, 'days').format('YYYY-MM-DD');
-          }
-        } 
 
+          }
+        }
       }
+      this.stat.svDate=  this.stat.allVacation[0];
       this.start = this.stat.svDate;
-      for(let i=0; i<15; i++){
-        for(let j=0; j<this.stat.allDates.length;j++) {
-          if(this.start===this.stat.allDates[i]){
+      for(let i=0; i<30; i++){
+        for(let j=0; j<this.stat.vacHol.length;j++) {
+          if(this.start===this.stat.vacHol[i]){
             this.start=moment(this.start).add(1, 'days').format('YYYY-MM-DD');
-            console.log(this.start)
           }else if(moment(this.start).format('dddd')==='Sunday' || moment(this.start).format('dddd')==='Saturday'){
             this.start=moment(this.start).add(1, 'days').format('YYYY-MM-DD');
-             console.log(this.start)
           }else{
             this.stat.evDate=moment(this.start).subtract(1, 'days').format('YYYY-MM-DD');
           }
@@ -414,6 +429,16 @@ methods: {
   getNow(){
     this.timestamp= moment().format('MMMM Do YYYY, h:mm a');
   },
+  
+  sortedsickDates() {
+    return this.stat.sickHol.sort((a, b) => new Date(a.date) - new Date(b.date))
+  }
+,  
+
+sortedvacDates() {
+    return this.stat.vacHol.sort((a, b) => new Date(a.date) - new Date(b.date))
+  }
+,  
 
   async deleteLeaves(){
       if(this.del.startDate !== "" && this.del.endDate !== ""){
