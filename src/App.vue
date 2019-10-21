@@ -138,15 +138,10 @@
               </tr>
             </thead>
             <tbody>
-              <tr class="green">
-              <td>{{stat.ssDate}}</td>
-              <td>{{stat.esDate }}</td>
-              <td>Sick</td>
-              </tr>
-              <tr class="teal">
-              <td>{{stat.svDate}}</td>
-              <td>{{stat.evDate}}</td>
-              <td>Vacation</td>
+              <tr v-for ="leavestat in leavestats" v-bind:class="leavestat.styleObject">
+              <td>{{leavestat.sd1}}</td>
+              <td>{{leavestat.ed1 }}</td>
+              <td>{{leavestat.tp1 }}</td>
               </tr>
             </tbody>
             </v-simple-table>
@@ -232,6 +227,8 @@ export default {
   data() {
     return {
       isError: false,
+      isS: false,
+      isV: false,
       view: "Login",
       action:"vacation",
       message: "",
@@ -294,7 +291,21 @@ export default {
 	      allSick:[],
 	      allVacation:[]
       },
-      start:""
+      start:"",
+      leavest1:{
+        sd1:"",
+        ed1:"",
+        tp1:"",
+        styleObject: ""
+      },
+      leavest:{
+        sd1:"",
+        ed1:"",
+        tp1:"",
+        styleObject: ""
+      },
+      leavestats:[]  
+
     };
   },
 
@@ -314,6 +325,11 @@ methods: {
           this.currentDate = moment().format("YYYY-MM-DD");
           this.view = "Leave";
           this.leaves= await getLeaves(this.user.id);
+          this.leaves.sort(function(a, b){
+          var aa = moment(a).format('YYYY-MM-DD'),
+            bb = moment(b).format('YYYY-MM-DD');
+          return aa < bb ? -1 : (aa > bb ? 1 : 0);
+          });
           this.holidays=await getPublicHolidays();
           this.holidays.sort((a,b) => (a.date > b.date) ? 1 : -1);
           
@@ -389,12 +405,19 @@ methods: {
             this.start=moment(this.start).add(1, 'days').format('YYYY-MM-DD');
           }else{
             this.stat.esDate=moment(this.start).subtract(1, 'days').format('YYYY-MM-DD');
-
+            
           }
-        }
+        }     
       }
-      this.stat.svDate=  this.stat.allVacation[0];
-      this.start = this.stat.svDate;
+        this.leavest1.sd1 = this.stat.ssDate;
+        this.leavest1.ed1 = this.stat.esDate;
+        this.leavest1.tp1 = 'Sick';
+        this.leavest1.styleObject='green';
+        this.leavestats.push(this.leavest1);
+        
+
+       this.stat.svDate=  this.stat.allVacation[0];
+       this.start = this.stat.svDate;
       for(let i=0; i<30; i++){
         for(let j=0; j<this.stat.vacHol.length;j++) {
           if(this.start===this.stat.vacHol[i]){
@@ -403,11 +426,17 @@ methods: {
             this.start=moment(this.start).add(1, 'days').format('YYYY-MM-DD');
           }else{
             this.stat.evDate=moment(this.start).subtract(1, 'days').format('YYYY-MM-DD');
+            
           }
         } 
 
       }
-      
+            
+            this.leavest.sd1 = this.stat.svDate;
+            this.leavest.ed1 = this.stat.evDate;
+            this.leavest.tp1 = 'Vacation';
+            this.leavest.styleObject='teal';
+            this.leavestats.push(this.leavest);
     },
 
   setApply(){
