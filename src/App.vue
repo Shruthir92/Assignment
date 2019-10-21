@@ -192,15 +192,15 @@
             <tbody>
               <tr>
               <td>
-              <v-text-field type="date" v-model="del.startDate" label="Start Date"/>
+              <v-text-field type="date" name="stDate" v-model="del.stDate" label="Start Date"/>
               </td>
               <td>
-              <v-text-field type="date" v-model="del.endDate" label="End Date"/>
+              <v-text-field type="date" name="enDate" v-model="del.enDate" label="End Date"/>
               </td>
               </tr> 
               <tr>
               <td> 
-              <v-btn color="teal" type="button" @click="deleteLeaves">Submit</v-btn>
+              <v-btn color="teal" type="button" @click="validateDelete">Submit</v-btn>
               </td> 
               </tr> 
               <tr></tr>
@@ -247,6 +247,7 @@ export default {
       dates:[],
       leaves:[],
       holidays:[],
+      allLeaves:[],
       currentDate:"" ,
       leave: {
         id:"",
@@ -277,10 +278,11 @@ export default {
         present:false
       },
       del: {
-        startDate: "",
-        endDate: "",
+        stDate: "",
+        enDate: "",
         msg:"",
-        isDelMsg:false 
+        isDelMsg:false,
+        Ddays:"" 
       },
       stat: {
         ssDate: "",
@@ -377,8 +379,6 @@ methods: {
       return aa < bb ? -1 : (aa > bb ? 1 : 0);
       });
       
-      console.log(this.stat.sickHol)
-      console.log(this.stat.vacHol)
       this.stat.ssDate = this.stat.allSick[0];
       this.start = this.stat.ssDate;
       for(let i=0; i<30; i++){
@@ -421,8 +421,8 @@ methods: {
 
   setDelete(){
       this.action="deleteLeave";
-      this.del.startDate="";
-      this.del.endDate="";
+      this.del.stDate="";
+      this.del.enDate="";
       this.del.msg="";
     },
 
@@ -430,37 +430,30 @@ methods: {
     this.timestamp= moment().format('MMMM Do YYYY, h:mm a');
   },
   
-  sortedsickDates() {
-    return this.stat.sickHol.sort((a, b) => new Date(a.date) - new Date(b.date))
-  }
-,  
-
-sortedvacDates() {
-    return this.stat.vacHol.sort((a, b) => new Date(a.date) - new Date(b.date))
-  }
-,  
-
-  async deleteLeaves(){
-      if(this.del.startDate !== "" && this.del.endDate !== ""){
-        if(moment(this.currentDate).isAfter(this.del.startDate)){
-          this.del.isDelError = true;
+  async validateDelete(){
+      if(this.del.stDate !== "" && this.del.enDate !== ""){
+        if(moment(this.currentDate).isAfter(this.del.stDate)){
+          this.del.isDelMsg = true;
           this.del.msg= "You cannot delete the leaves from past!! "
-        } else if(moment(this.del.startDate).isAfter(this.del.endDate)){
-          this.del.isDelError = true;
+        } else if(moment(this.del.stDate).isAfter(this.del.enDate)){
+          this.del.isDelMsg = true;
           this.del.msg="End date cannot be lesser than Start date";
         } else{
-          await allDays(this.del.startDate,this.del.endDate); 
-          console.log(this.dates)
-          for(let i = 0; i < this.days.length; i++){
+          this.date=this.del.stDate;
+          this.del.Ddays=moment(this.del.enDate).diff(moment(this.del.stDate), 'days') + 1 ;
+          
+          for(let i = 0; i < this.del.Ddays; i++){
             for(let k = 0; k < this.leaves.length; k++){
               this.leave=this.leaves[k];
-              if(this.days[i] === this.leave.date){
+              if(this.date === this.leave.date){
                 this.status = await removeLeaves(this.leave.id);
                 if(this.status === 200){
                   this.del.isDelMsg = true;
                   this.del.msg="Leaves deleted successfully";
-                  this.del.startDate="" ;
-                  this.del.endDate="" ; 
+                  this.del.stDate="" ;
+                  this.del.enDate="" ; 
+                  this.del.Ddays="";
+                  this.date = moment(this.date).add(1, 'days').format('YYYY-MM-DD'); 
                 }else{
                   this.del.isDelMsg = true;
                   this.del.msg="Leaves are not deleted";
@@ -474,7 +467,7 @@ sortedvacDates() {
 
         }
       }else{
-        this.del.isDelError = true;
+        this.del.isDelMsg = true;
         this.del.msg= "Please provide start and end date"
       }
       
@@ -552,15 +545,7 @@ sortedvacDates() {
       this.apply.isDateError = true;
       this.apply.Aerror="Please provide all the fields"
       }  
-    },
-
-  async allDays(startDate, endDate) {
-    while (startDate.isSameOrBefore(endDate)) {
-        this.dates.push(startDate.format('YYYY-MM-DD'));
-        startDate.add(1, 'days');
     }
-    
-  }
   }
 
 };
