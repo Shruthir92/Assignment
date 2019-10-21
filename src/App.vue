@@ -174,13 +174,13 @@
                   <td>
                     <v-text-field
                       type="date"
-                      name="stDate"
-                      v-model="del.stDate"
+                      name="startDate"
+                      v-model="remove.startDate"
                       label="Start Date"
                     />
                   </td>
                   <td>
-                    <v-text-field type="date" name="enDate" v-model="del.enDate" label="End Date" />
+                    <v-text-field type="date" name="endDate" v-model="remove.endDate" label="End Date" />
                   </td>
                 </tr>
                 <tr>
@@ -191,7 +191,7 @@
                 <tr></tr>
                 <tr>
                   <td>
-                    <p class="red--text" v-if="del.isDelMsg">{{ del.msg }}</p>
+                    <p class="red--text" v-if="remove.error">{{ remove.message }}</p>
                   </td>
                 </tr>
               </tbody>
@@ -217,8 +217,6 @@ export default {
   data() {
     return {
       isError: false,
-      isS: false,
-      isV: false,
       view: "Login",
       action: "vacation",
       message: "",
@@ -263,36 +261,14 @@ export default {
         isDateError: false,
         present: false
       },
-      del: {
-        stDate: "",
-        enDate: "",
-        msg: "",
-        isDelMsg: false,
+      remove: {
+        startDate: "",
+        endDate: "",
+        message: "",
+        error: false,
         Ddays: ""
       },
-      stat: {
-        ssDate: "",
-        esDate: "",
-        svDate: "",
-        evDate: "",
-        sickHol: [],
-        vacHol: [],
-        allSick: [],
-        allVacation: []
-      },
       start: "",
-      leavest1: {
-        start: "",
-        end: "",
-        type: "",
-        styleObject: ""
-      },
-      leavest: {
-        start: "",
-        end: "",
-        type: "",
-        styleObject: ""
-      }
     };
   },
 
@@ -363,9 +339,9 @@ export default {
 
     setDelete() {
       this.action = "deleteLeave";
-      this.del.stDate = "";
-      this.del.enDate = "";
-      this.del.msg = "";
+      this.remove.startDate = "";
+      this.remove.endDate = "";
+      this.remove.message = "";
     },
 
     getNow() {
@@ -373,46 +349,46 @@ export default {
     },
 
     async validateDelete() {
-      if (this.del.stDate !== "" && this.del.enDate !== "") {
-        if (moment(this.currentDate).isAfter(this.del.stDate)) {
-          this.del.isDelMsg = true;
-          this.del.msg = "You cannot delete the leaves from past!! ";
-        } else if (moment(this.del.stDate).isAfter(this.del.enDate)) {
-          this.del.isDelMsg = true;
-          this.del.msg = "End date cannot be lesser than Start date";
+      if (this.remove.startDate !== "" && this.remove.endDate !== "") {
+        if (moment(this.currentDate).isAfter(this.remove.startDate)) {
+          this.remove.error = true;
+          this.remove.message = "You cannot delete the leaves from past!! ";
+        } else if (moment(this.remove.startDate).isAfter(this.remove.endDate)) {
+          this.remove.error = true;
+          this.remove.message = "End date cannot be lesser than Start date";
         } else {
-          this.date = this.del.stDate;
-          this.del.Ddays =
-            moment(this.del.enDate).diff(moment(this.del.stDate), "days") + 1;
+          this.date = this.remove.startDate;
+          this.remove.Ddays =
+            moment(this.remove.endDate).diff(moment(this.remove.startDate), "days") + 1;
 
-          for (let i = 0; i < this.del.Ddays; i++) {
+          for (let i = 0; i < this.remove.Ddays; i++) {
             for (let k = 0; k < this.leaves.length; k++) {
               this.leave = this.leaves[k];
               if (this.date === this.leave.date) {
                 this.status = await removeLeaves(this.leave.id);
                 if (this.status === 200) {
-                  this.del.isDelMsg = true;
-                  this.del.msg = "Leaves deleted successfully";
-                  this.del.stDate = "";
-                  this.del.enDate = "";
-                  this.del.Ddays = "";
+                  this.remove.error = true;
+                  this.remove.message = "Leaves deleted successfully";
+                  this.remove.startDate = "";
+                  this.remove.endDate = "";
+                  this.remove.Ddays = "";
                   this.date = moment(this.date)
                     .add(1, "days")
                     .format("YYYY-MM-DD");
                 } else {
-                  this.del.isDelMsg = true;
-                  this.del.msg = "Leaves are not deleted";
+                  this.remove.error = true;
+                  this.remove.message = "Leaves are not deleted";
                 }
               } else {
-                this.del.isDelMsg = true;
-                this.del.msg = "No leaves recorded for this date";
+                this.remove.error = true;
+                this.remove.message = "No leaves recorded for this date";
               }
             }
           }
         }
       } else {
-        this.del.isDelMsg = true;
-        this.del.msg = "Please provide start and end date";
+        this.remove.error = true;
+        this.remove.message = "Please provide start and end date";
       }
     },
 
