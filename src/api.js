@@ -40,7 +40,7 @@ export async function removeLeaves(ids) {
         ids: ids.toString()
       }
     });
-    return response.data;
+    return response;
   } catch (error) {
     return false;
   }
@@ -60,7 +60,7 @@ export async function recordLeaves(leaves) {
     const response = await axiosInstance.post("/leaves", {
       leaves
     });
-    return response.data;
+    return response;
   } catch (error) {
     return false;
   }

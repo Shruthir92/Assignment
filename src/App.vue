@@ -52,15 +52,15 @@
             <tbody>
               <tr>
                 <td>Vacation</td>
-                <td>{{ user.holidays + vacationRecorded }}</td>
+                <td>{{ user.holidays + leavecount.vacationRecorded }}</td>
                 <td>{{ user.holidays }}</td>
-                <td>{{ vacationRecorded }}</td>
+                <td>{{ leavecount.vacationRecorded }}</td>
               </tr>
               <tr>
                 <td>Sick</td>
-                <td>{{ user.sickdays + sickRecorded }}</td>
+                <td>{{ user.sickdays + leavecount.sickRecorded }}</td>
                 <td>{{ user.sickdays }}</td>
-                <td>{{sickRecorded}}</td>
+                <td>{{leavecount.sickRecorded}}</td>
               </tr>
             </tbody>
           </v-simple-table>
@@ -111,7 +111,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="leavestat in leavestats">
+                <tr v-for="leavestat in leavestats" v-bind:class="leavestat.styleObject">
                   <td>{{leavestat.start}}</td>
                   <td>{{leavestat.end }}</td>
                   <td>{{leavestat.type }}</td>
@@ -247,8 +247,6 @@ export default {
         name: ""
       },
       status: "",
-      sickRecorded: 0,
-      vacationRecorded: 0,
 
       input: {
         username: ""
@@ -269,7 +267,7 @@ export default {
         error: false,
         Ddays: ""
       },
-      start: "",
+      start: ""
     };
   },
 
@@ -283,7 +281,7 @@ export default {
 
       if (this.input.username !== "") {
         this.user = await getUser(this.input.username);
-        this.setLeave()
+        this.setLeave();
         if (this.user) {
           this.view = "Leave";
         } else {
@@ -306,21 +304,12 @@ export default {
 
     async setHoliday() {
       this.action = "holiday";
-      this.holidays = await getPublicHolidays();
-      this.holidays = this.sortDates(this.holidays)
+      this.holidays = this.sortDates(await getPublicHolidays());
     },
 
     async setLeave() {
       this.action = "leave";
-      this.leaves = await getLeaves(this.user.id);
-      this.leaves = this.sortDates(this.leaves)
-      for (const leave of this.leaves) {
-        if (leave.type === "sick") {
-          this.sickRecorded = this.sickRecorded + 1;
-        } else {
-          this.vacationRecorded = this.vacationRecorded + 1;
-        }
-      }
+      this.leaves = this.sortDates(await getLeaves(this.user.id));
     },
 
     setApply() {
@@ -353,33 +342,42 @@ export default {
           this.remove.message = "End date cannot be lesser than Start date";
         } else {
           let date = this.remove.startDate;
+          const delArray=[];
           this.remove.Ddays =
-            moment(this.remove.endDate).diff(moment(this.remove.startDate), "days") + 1;
+            moment(this.remove.endDate).diff(
+              moment(this.remove.startDate),
+              "days"
+            ) + 1;
 
           for (let i = 0; i < this.remove.Ddays; i++) {
             for (let k = 0; k < this.leaves.length; k++) {
               this.leave = this.leaves[k];
               if (date === this.leave.date) {
-                this.status = await removeLeaves(this.leave.id);
-                if (this.status === 200) {
-                  this.remove.error = true;
-                  this.remove.message = "Leaves deleted successfully";
-                  this.remove.startDate = "";
-                  this.remove.endDate = "";
-                  this.remove.Ddays = "";
-                  date = moment(date)
-                    .add(1, "days")
-                    .format("YYYY-MM-DD");
-                } else {
-                  this.remove.error = true;
-                  this.remove.message = "Leaves are not deleted";
-                }
-              } else {
+                this.remove.error = false;
+                delArray.push(this.leave.id); 
+              } else{
                 this.remove.error = true;
-                this.remove.message = "No leaves recorded for this date";
-              }
+                this.remove.message = "No leaves recorded for this date";   
+              } 
+            }
+            date = moment(date)
+              .add(1, "days")
+              .format("YYYY-MM-DD");
+
+          }
+          if (!this.remove.error) {
+            this.status = await removeLeaves(delArray);
+            if (this.status.status === 200) {
+              this.remove.error = true;
+              this.apply.error = "Leaves Deleted Successfully";
+              this.remove.endDate = "";
+              this.remove.startDate = "";
+              this.remove.Ddays = "";
+              this.setLeave();
+              this.user = await getUser(this.input.username); 
             }
           }
+          
         }
       } else {
         this.remove.error = true;
@@ -399,17 +397,26 @@ export default {
         } else if (moment(this.apply.startDate).isAfter(this.apply.endDate)) {
           this.apply.isDateError = true;
           this.apply.error = "End date cannot be lesser than Start date";
-        } else if ( this.isWeekend(this.apply.startDate) || this.isWeekend(this.apply.endDate) ) {
+        } else if (
+          this.isWeekend(this.apply.startDate) ||
+          this.isWeekend(this.apply.endDate)
+        ) {
           this.apply.isDateError = true;
           this.apply.error = "Cannot apply leaves on sunday or saturday";
-        } else if (moment(this.apply.endDate).format("YYYY") != moment(this.currentDate).format("YYYY")) {
+        } else if (
+          moment(this.apply.endDate).format("YYYY") !=
+          moment(this.currentDate).format("YYYY")
+        ) {
           this.apply.isDateError = true;
           this.apply.error = "You can only apply leaves for current year";
-        } else if(this.isHoliday(this.apply.startDate) || this.isHoliday(this.apply.endDate)){
-            this.apply.isDateError = true;
-            this.apply.error = "Cannot apply leaves on public holidays ";
+        } else if (
+          this.isHoliday(this.apply.startDate) ||
+          this.isHoliday(this.apply.endDate)
+        ) {
+          this.apply.isDateError = true;
+          this.apply.error = "Cannot apply leaves on public holidays ";
         } else {
-          const leaveDates = new Array()
+          const leaveDates = new Array();
           let date = this.apply.startDate;
           this.apply.days =
             moment(this.apply.endDate).diff(
@@ -424,27 +431,29 @@ export default {
                 this.apply.present = true;
                 this.apply.error =
                   "Already you have applied leaves for this date";
-                return
+                return;
               }
             }
             leaveDates.push({
               userId: this.user.id,
               date: date,
               type: this.apply.type
-            })
+            });
             date = moment(date)
               .add(1, "days")
               .format("YYYY-MM-DD");
           }
-          if(!this.apply.isDateError) {
+          if (!this.apply.isDateError) {
             this.status = await recordLeaves(leaveDates);
-            if (this.status === 200) {
+            if (this.status.status === 200) {
               this.apply.isDateError = true;
               this.apply.error = "Leaves applied successfully";
               this.apply.startDate = "";
               this.apply.endDate = "";
               this.apply.type = "";
               this.apply.days = "";
+              this.setLeave();
+              this.user = await getUser(this.input.username);
             }
           }
         }
@@ -454,48 +463,52 @@ export default {
       }
     },
     isWeekend(date) {
-      return moment(date).day() == 0 || moment(date).day() == 6
+      return moment(date).day() == 0 || moment(date).day() == 6;
     },
     isHoliday(date) {
-      for(const holiday of this.holidays){
-        if(moment(date).isSame(holiday.date)) {
-          return true
+      for (const holiday of this.holidays) {
+        if (moment(date).isSame(holiday.date)) {
+          return true;
         }
       }
-      return false
+      return false;
     },
-    isAllDatesBetweenIsHoliday(startDate, endDate){
-      const previousDate = endDate.subtract(1, "day")
-      while(previousDate <= startDate) {
-        if(this.isHoliday(previousDate) || this.isWeekend(previousDate)){
-          continue
+    isAllDatesBetweenIsHoliday(startDate, endDate) {
+      const previousDate = endDate.subtract(1, "day");
+      while (previousDate <= startDate) {
+        if (this.isHoliday(previousDate) || this.isWeekend(previousDate)) {
+          continue;
         } else {
-          return false
+          return false;
         }
       }
-      return true
+      return true;
     },
-    sortDates(dates){
+    sortDates(dates) {
       return dates.sort((a, b) =>
         parseInt(moment(a.date).format("x")) >
         parseInt(moment(b.date).format("x"))
           ? 1
           : -1
       );
-    },
+    }
   },
 
   computed: {
     leavestats() {
       const leavestats = new Array();
-      const sortedLeaves = this.sortDates(this.leaves)
-      for (const leave of sortedLeaves) {
+      for (const leave of this.leaves) {
         const leavestatsLength = leavestats.length;
         if (leavestatsLength > 0) {
           if (
-            (moment(leave.date).diff(moment(leavestats[leavestatsLength - 1].end)) === 86400000 || 
-            moment(leave.date).day() === 1 ||
-            this.isAllDatesBetweenIsHoliday(moment(leavestats[leavestatsLength-1].end), moment(leave.date))) &&
+            (moment(leave.date).diff(
+              moment(leavestats[leavestatsLength - 1].end)
+            ) === 86400000 ||
+              moment(leave.date).day() === 1 ||
+              this.isAllDatesBetweenIsHoliday(
+                moment(leavestats[leavestatsLength - 1].end),
+                moment(leave.date)
+              )) &&
             leave.type === leavestats[leavestatsLength - 1].type.toLowerCase()
           ) {
             leavestats[leavestatsLength - 1].end = leave.date;
@@ -505,11 +518,28 @@ export default {
         leavestats.push({
           start: leave.date,
           end: leave.date,
-          type: leave.type,
+          type: leave.type
         });
       }
       return leavestats;
     },
+
+    leavecount() {
+      let sickRecorded = 0;
+      let vacationRecorded = 0;
+
+      for (const leave of this.leaves) {
+        if (leave.type === "sick") {
+          sickRecorded += 1;
+        } else {
+          vacationRecorded += 1;
+        }
+      }
+      return {
+        sickRecorded,
+        vacationRecorded
+      };
+    }
   }
 };
 </script>
