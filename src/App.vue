@@ -39,7 +39,7 @@
         </v-col>
       </v-row>
       <v-row>
-        <v-col cols="10">
+        <v-col cols="8">
           <v-simple-table dense dark>
             <thead>
               <tr>
@@ -68,9 +68,6 @@
       </v-row>
       <v-row>
         <v-col cols="2">
-          <v-btn color="teal" block type="button" @click="setVacation">Availed Leaves</v-btn>
-        </v-col>
-        <v-col cols="2">
           <v-btn color="teal" block type="button" @click="setHoliday">Holidays List</v-btn>
         </v-col>
         <v-col cols="2">
@@ -84,25 +81,7 @@
         </v-col>
       </v-row>
       <v-row>
-        <v-col cols="10">
-          <div v-if="action === 'vacation'">
-            <h3>Availed Leaves Details</h3>
-            <v-simple-table>
-              <thead>
-                <tr>
-                  <th>Recorded Date</th>
-                  <th>Leave Type</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="leave in leaves">
-                  <td>{{ leave.date }}</td>
-                  <td>{{leave.type}}</td>
-                </tr>
-              </tbody>
-            </v-simple-table>
-          </div>
-
+        <v-col cols="8">
           <div v-if="action === 'holiday'">
             <h3>Public Holidays</h3>
             <v-simple-table>
@@ -150,7 +129,7 @@
                     <v-text-field
                       type="date"
                       name="startDate"
-                      v-model="apply.AstartDate"
+                      v-model="apply.startDate"
                       label="Start Date"
                     />
                   </td>
@@ -158,19 +137,19 @@
                     <v-text-field
                       type="date"
                       name="endDate"
-                      v-model="apply.AendDate"
+                      v-model="apply.endDate"
                       label="End Date"
                     />
                   </td>
                   <td>
                     <v-select
-                      v-model="apply.Atype"
+                      v-model="apply.type"
                       label="Leave Type"
                       :items="['vacation', 'sick']"
                     ></v-select>
                   </td>
                   <td>
-                    <span>Num of Days: {{apply.Adays}}</span>
+                    <span>Num of Days: {{apply.days}}</span>
                   </td>
                 </tr>
                 <tr>
@@ -181,7 +160,7 @@
                 <tr></tr>
                 <tr>
                   <td>
-                    <p class="red--text" v-if="apply.isDateError">{{ apply.Aerror }}</p>
+                    <p class="red--text" v-if="apply.isDateError">{{ apply.error }}</p>
                   </td>
                 </tr>
               </tbody>
@@ -276,11 +255,11 @@ export default {
         username: ""
       },
       apply: {
-        AstartDate: "",
-        AendDate: "",
-        Atype: "",
-        Adays: "",
-        Aerror: "",
+        startDate: "",
+        endDate: "",
+        type: "",
+        days: "",
+        error: "",
         isDateError: false,
         present: false
       },
@@ -365,10 +344,6 @@ export default {
       this.holidays = null;
     },
 
-    setVacation() {
-      this.action = "vacation";
-    },
-
     setHoliday() {
       this.action = "holiday";
     },
@@ -379,11 +354,11 @@ export default {
 
     setApply() {
       this.action = "applyLeave";
-      this.apply.AstartDate = "";
-      this.apply.AendDate = "";
-      this.apply.Atype = "";
-      this.apply.Aerror = "";
-      this.apply.Adays = "";
+      this.apply.startDate = "";
+      this.apply.endDate = "";
+      this.apply.type = "";
+      this.apply.error = "";
+      this.apply.days = "";
     },
 
     setDelete() {
@@ -443,59 +418,59 @@ export default {
 
     async Validate() {
       if (
-        this.apply.AstartDate !== "" &&
-        this.apply.AendDate !== "" &&
-        this.apply.Atype !== ""
+        this.apply.startDate !== "" &&
+        this.apply.endDate !== "" &&
+        this.apply.type !== ""
       ) {
-        if (moment(this.currentDate).isAfter(this.apply.AstartDate)) {
+        if (moment(this.currentDate).isAfter(this.apply.startDate)) {
           this.apply.isDateError = true;
-          this.apply.Aerror = "Start Date cannot be lesser than current date";
-        } else if (moment(this.apply.AstartDate).isAfter(this.apply.AendDate)) {
+          this.apply.error = "Start Date cannot be lesser than current date";
+        } else if (moment(this.apply.startDate).isAfter(this.apply.endDate)) {
           this.apply.isDateError = true;
-          this.apply.Aerror = "End date cannot be lesser than Start date";
+          this.apply.error = "End date cannot be lesser than Start date";
         } else if (
-          moment(this.apply.AstartDate).format("dddd") === "Sunday" ||
-          moment(this.apply.AendDate).format("dddd") === "Saturday"
+          moment(this.apply.startDate).format("dddd") === "Sunday" ||
+          moment(this.apply.endDate).format("dddd") === "Saturday"
         ) {
           this.apply.isDateError = true;
-          this.apply.Aerror = "Cannot apply leaves on sunday or saturday";
+          this.apply.error = "Cannot apply leaves on sunday or saturday";
         } else if (
-          moment(this.apply.AendDate).format("dddd") === "Sunday" ||
-          moment(this.apply.AendDate).format("dddd") === "Saturday"
+          moment(this.apply.endDate).format("dddd") === "Sunday" ||
+          moment(this.apply.endDate).format("dddd") === "Saturday"
         ) {
           this.apply.isDateError = true;
-          this.apply.Aerror = "Cannot apply leaves on sunday or saturday";
+          this.apply.error = "Cannot apply leaves on sunday or saturday";
         } else if (
-          moment(this.apply.AendDate).format("YYYY") !=
+          moment(this.apply.endDate).format("YYYY") !=
           moment(this.currentDate).format("YYYY")
         ) {
           this.apply.isDateError = true;
-          this.apply.Aerror = "You can only apply leaves for current year";
+          this.apply.error = "You can only apply leaves for current year";
         } else {
           for (let l = 0; l < this.holidays.length; l++) {
             this.holiday = this.holidays[l];
             if (
-              this.apply.AendDate === this.holiday.date ||
-              this.apply.AstartDate === this.holiday.date
+              this.apply.endDate === this.holiday.date ||
+              this.apply.startDate === this.holiday.date
             ) {
               this.apply.isDateError = true;
-              this.apply.Aerror = "Cannot apply leaves on public holidays ";
+              this.apply.error = "Cannot apply leaves on public holidays ";
             }
           }
           this.apply.isDateError = false;
-          this.date = this.apply.AstartDate;
-          this.apply.Adays =
-            moment(this.apply.AendDate).diff(
-              moment(this.apply.AstartDate),
+          this.date = this.apply.startDate;
+          this.apply.days =
+            moment(this.apply.endDate).diff(
+              moment(this.apply.startDate),
               "days"
             ) + 1;
-          for (let i = 0; i < this.apply.Adays; i++) {
+          for (let i = 0; i < this.apply.days; i++) {
             for (let k = 0; k < this.leaves.length; k++) {
               this.leave = this.leaves[k];
               if (this.date === this.leave.date) {
                 this.apply.isDateError = true;
                 this.apply.present = true;
-                this.apply.Aerror =
+                this.apply.error =
                   "Already you have applied leaves for this date";
               }
             }
@@ -503,7 +478,7 @@ export default {
               var addleaves = {
                 userId: this.user.id,
                 date: this.date,
-                type: this.apply.Atype
+                type: this.apply.type
               };
               this.status = await recordLeaves(addleaves);
               console.log(this.status);
@@ -514,16 +489,16 @@ export default {
           }
           if (this.status === 200) {
             this.apply.isDateError = true;
-            this.apply.Aerror = "Leaves applied successfully";
-            this.apply.AstartDate = "";
-            this.apply.AendDate = "";
-            this.apply.Atype = "";
-            this.apply.Adays = "";
+            this.apply.error = "Leaves applied successfully";
+            this.apply.startDate = "";
+            this.apply.endDate = "";
+            this.apply.type = "";
+            this.apply.days = "";
           }
         }
       } else {
         this.apply.isDateError = true;
-        this.apply.Aerror = "Please provide all the fields";
+        this.apply.error = "Please provide all the fields";
       }
     },
     isHoliday(date) {
